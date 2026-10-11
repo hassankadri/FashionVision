@@ -1,5 +1,6 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import PrivacyPolicy from './PrivacyPolicy.jsx';
 import './crop.css';
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -1176,13 +1177,37 @@ function About() {
           </div>
         </div>
 
+        <div className="research-detail research-last">
+          <div className="research-intro">
+            <span className="eyebrow">THE DEVELOPER</span>
+            <h3>About the Developer</h3>
+          </div>
+          <div className="research-text">
+            <p>
+              FashionVision is a personal AI/ML project by{' '}
+              <a href="https://github.com/hassankadri">Hassan Kadri</a>,
+              exploring fashion image classification using MobileNetV3 and CLIP,
+              with Grad-CAM for visual explanations.
+            </p>
+            <p>
+              The project brings together machine learning, model evaluation,
+              and a modern interactive web experience.
+            </p>
+          </div>
+        </div>
+
         <footer className="page-footer">
           <div>
             <strong>FashionVision</strong>
             <span>Independent computer vision project</span>
+            <span>Developed by <a href="https://github.com/hassankadri">Hassan Kadri</a></span>
+            <span title="Copyright applies to original website content.">© 2026 <a href="https://github.com/hassankadri">Hassan Kadri</a>. All rights reserved.</span>
           </div>
           <span>Built to make model outputs easier to inspect.</span>
-          <a href="#top">Back to top ↑</a>
+          <div className="footer-links">
+            <a href="#privacy">Privacy Policy</a>
+            <a href="#top">Back to top ↑</a>
+          </div>
         </footer>
       </div>
     </section>
@@ -1191,6 +1216,37 @@ function About() {
 
 export default function App() {
   const [connected, setConnected] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(() => window.location.hash === '#privacy');
+  const previousPrivacyRef = useRef(privacyOpen);
+
+  useEffect(() => {
+    const syncPage = () => setPrivacyOpen(window.location.hash === '#privacy');
+    window.addEventListener('hashchange', syncPage);
+    window.addEventListener('popstate', syncPage);
+    return () => {
+      window.removeEventListener('hashchange', syncPage);
+      window.removeEventListener('popstate', syncPage);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const previousTitle = document.title;
+    if (privacyOpen) {
+      document.title = 'Privacy Policy — FashionVision';
+      window.scrollTo(0, 0);
+      document.getElementById('privacy-heading')?.focus({ preventScroll: true });
+    } else if (previousPrivacyRef.current) {
+      const id = window.location.hash.slice(1) || 'top';
+      const target = document.getElementById(id);
+      const offset = id === 'top' ? 0 : window.innerWidth <= 580 ? 62 : 78;
+      window.scrollTo(0, target
+        ? Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset)
+        : 0);
+      document.querySelector('.brand')?.focus({ preventScroll: true });
+    }
+    previousPrivacyRef.current = privacyOpen;
+    return () => { document.title = previousTitle; };
+  }, [privacyOpen]);
 
   useEffect(() => {
     let frame = 0;
@@ -1216,11 +1272,25 @@ export default function App() {
       ) return;
 
       const id = anchor.getAttribute('href').slice(1);
+      if (id === 'privacy') {
+        event.preventDefault();
+        cancelScroll();
+        history.pushState(null, '', '#privacy');
+        setPrivacyOpen(true);
+        return;
+      }
+
       const target = document.getElementById(id);
       if (!target) return;
 
       event.preventDefault();
       cancelScroll();
+
+      if (privacyOpen) {
+        history.pushState(null, '', `#${id}`);
+        setPrivacyOpen(false);
+        return;
+      }
 
       const offset = id === 'top'
         ? 0
@@ -1273,7 +1343,7 @@ export default function App() {
       window.removeEventListener('wheel', cancelScroll);
       window.removeEventListener('touchstart', cancelScroll);
     };
-  }, []);
+  }, [privacyOpen]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1292,10 +1362,13 @@ export default function App() {
     <>
       <Header connected={connected} />
       <main>
-        <Hero />
-        <Studio />
-        <Gallery />
-        <About />
+        <div hidden={privacyOpen}>
+          <Hero />
+          <Studio />
+          <Gallery />
+          <About />
+        </div>
+        {privacyOpen && <PrivacyPolicy />}
       </main>
     </>
   );

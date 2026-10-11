@@ -94,5 +94,20 @@ and [test documentation](tests/README.md).
 
 Provision Python dependencies, download CLIP, and build React before serving
 the website. Each process loads its own models; select worker count and memory
-for the target host. Hosting configuration, a project license and a dataset
-redistribution policy must be selected before public deployment or redistribution.
+for the target host. Hosting configuration and a dataset redistribution policy must be selected
+before public deployment or redistribution.
+
+## Developer
+
+FashionVision is developed and maintained by [Hassan Kadri](https://github.com/hassankadri).
+
+## Copyright and Usage
+
+Copyright © 2026 Hassan Kadri for original project material owned by Hassan Kadri.
+
+This repository has no general open-source license. Public availability does not
+grant unrestricted reuse rights. See the [Copyright and Rights Notice](NOTICE.md)
+for usage terms.
+
+Third-party models, datasets, and dependencies remain subject to their respective
+licenses and terms.
