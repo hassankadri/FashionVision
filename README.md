@@ -441,3 +441,11 @@ No project licence has been selected yet. The bundled CLIP model is MIT-licensed
 *If this project helped you, consider giving it a ⭐*
 
 </div>
+
+## Copyright and Usage
+
+© 2026 Hassan Kadri. All rights reserved for original project material owned by Hassan Kadri.
+
+This public repository does not grant a general license to copy, modify, redistribute, or commercially reuse its original material.
+
+See [Copyright and Rights Notice](NOTICE.md) for details. Third-party models, datasets, and dependencies remain subject to their respective licenses.
