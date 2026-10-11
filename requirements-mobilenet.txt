@@ -1,0 +1,4 @@
+# MobileNet and Grad-CAM runtime; versions match the saved model configuration.
+-r requirements.txt
+tensorflow==2.21.0
+keras==3.15.1

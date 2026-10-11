@@ -1,0 +1,7 @@
+{
+  "executed_source": "training_source.py",
+  "executed_source_sha256": "2960a893424ce5c6a57fc34750da4107084e90313a6874d576092f456622c16c",
+  "working_source_sha256": "b4420534011faad7e7ab9aedbfaf9d6f6ebd9e386148d942a513186d90572a0e",
+  "post_start_edit": "Removed one extra trailing blank line only; Python AST identical",
+  "training_settings_changed": false
+}

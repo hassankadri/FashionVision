@@ -1,0 +1,4 @@
+# Python regression dependencies; add MobileNet/training groups where needed.
+-r requirements.txt
+-r requirements-legacy.txt
+httpx>=0.28,<0.29

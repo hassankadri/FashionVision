@@ -1,0 +1,287 @@
+{
+  "class_names": [
+    "T-shirts",
+    "Shirts",
+    "Kurtas",
+    "Pants",
+    "Closed shoes",
+    "Handbags",
+    "Watches",
+    "Sunglasses",
+    "Backpacks",
+    "Belts"
+  ],
+  "data_counts": {
+    "test": 2546,
+    "train": 20364,
+    "validation": 2545
+  },
+  "inference": {
+    "amortized_end_to_end_ms_per_image": 14.926864218383017,
+    "amortized_model_compute_ms_per_image": 5.1769374705357505,
+    "batch_size": 32,
+    "end_to_end_seconds": 38.00379630000316,
+    "model_compute_seconds": 13.18048279998402,
+    "samples": 2546,
+    "single_request_latency": "NOT MEASURED",
+    "warmup": "one validation batch"
+  },
+  "limitations": [
+    "No authoritative product-family IDs; every multi-image group remains UNREVIEWED/UNVERIFIED",
+    "Metadata-only links may overgroup distinct products; transitive links can join larger families",
+    "Strict visual rules may miss different views or unsupported variants; weak candidates remain across splits",
+    "The Phase 3C model was trained on the old split, so cannot be evaluated as an independently trained baseline on this new test split",
+    "One seed and one configuration; no repeated tuning or uncertainty estimates",
+    "Training accuracy uses augmentation/dropout; validation/test do not",
+    "Batched CPU throughput is not single-image deployment latency"
+  ],
+  "manifest_hashes": {
+    "accepted_evidence.jsonl": "f4ab3a636e53e46a96fde2a144ac12c832039d8378e0795fe769c4c824f4e473",
+    "audit.json": "e2c36fca7138d445f9716b099682220bf77bddf457def6be721040230b194a26",
+    "configuration.json": "44f26a7b11435c996722657db060fe1d755f0812a919ebc4c0edb70c23606b93",
+    "groups.jsonl": "7031c9eee119bcacec160b9b113cf5000a3c723ccfaea6e34523a01173de4bc9",
+    "image_features.jsonl": "52d8076afd714561e7f0a2220a3c2a74498cd2a6ed9e038d0dadb056f19c59a1",
+    "metadata_review.jsonl": "7b894719315968b60515957e52a06928c0b287385e0d3f7440bb1aa02ebd9d97",
+    "similarity_candidates.jsonl": "35179ba8eb3eefa8cc32d6735d146d73b064ecbc041266df7b45f0bb1b4b8bad",
+    "test.jsonl": "5e653270e0ba3ada4860d00e6535965127cf9486b2ec9f4799f152bf97e793fa",
+    "train.jsonl": "83b2a970a7a81993c7f9e9231f55b334f87f6fcd19661e4e0951f623d6136b4b",
+    "unresolved_cross_split_candidates.jsonl": "43eeb365f4573576c2ba84ce91ee8127c4d7709a925ccf9d77d8bd46f19cd35b",
+    "validation.jsonl": "f6df5cef7bcf4041481e896d4ce8a49c99f488c8df5cd6accc85dc88ffc29666"
+  },
+  "metrics": {
+    "accuracy": 0.9925373134328358,
+    "confusion_matrix": [
+      [
+        681,
+        2,
+        1,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        5,
+        287,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        2,
+        181,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        142,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        549,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        175,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        254,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        106,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        71,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        81
+      ]
+    ],
+    "macro_f1": 0.9925277736757192,
+    "macro_precision": 0.9919549656585744,
+    "macro_recall": 0.9931283740884063,
+    "per_class": [
+      {
+        "class_id": 0,
+        "class_name": "T-shirts",
+        "f1": 0.9912663755458515,
+        "precision": 0.9912663755458515,
+        "recall": 0.9912663755458515,
+        "support": 687
+      },
+      {
+        "class_id": 1,
+        "class_name": "Shirts",
+        "f1": 0.9828767123287672,
+        "precision": 0.9862542955326461,
+        "recall": 0.9795221843003413,
+        "support": 293
+      },
+      {
+        "class_id": 2,
+        "class_name": "Kurtas",
+        "f1": 0.9836956521739131,
+        "precision": 0.9836956521739131,
+        "recall": 0.9836956521739131,
+        "support": 184
+      },
+      {
+        "class_id": 3,
+        "class_name": "Pants",
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 142
+      },
+      {
+        "class_id": 4,
+        "class_name": "Closed shoes",
+        "f1": 0.9981818181818182,
+        "precision": 1.0,
+        "recall": 0.9963702359346642,
+        "support": 551
+      },
+      {
+        "class_id": 5,
+        "class_name": "Handbags",
+        "f1": 0.9831460674157303,
+        "precision": 0.9722222222222222,
+        "recall": 0.9943181818181818,
+        "support": 176
+      },
+      {
+        "class_id": 6,
+        "class_name": "Watches",
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 254
+      },
+      {
+        "class_id": 7,
+        "class_name": "Sunglasses",
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 106
+      },
+      {
+        "class_id": 8,
+        "class_name": "Backpacks",
+        "f1": 0.9861111111111112,
+        "precision": 0.9861111111111112,
+        "recall": 0.9861111111111112,
+        "support": 72
+      },
+      {
+        "class_id": 9,
+        "class_name": "Belts",
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 81
+      }
+    ],
+    "top3_accuracy": 0.9992144540455616,
+    "weighted_f1": 0.9925431132740294,
+    "weighted_precision": 0.9925701569922137,
+    "weighted_recall": 0.9925373134328358
+  },
+  "parameter_count": 944890,
+  "probability_shape": [
+    2546,
+    10
+  ],
+  "saved_model_bytes": 10262152,
+  "saved_model_sha256": "3d095fbaffef382d7be0068db178a713b79558c06ae97fb043e4f0319b0479a2",
+  "schema": "fashion-products-family-mobilenet/1.0",
+  "selection": {
+    "best_global_epoch": 12,
+    "best_validation_accuracy": 0.9925343990325928,
+    "criterion": "maximum unweighted validation accuracy across both stages; earliest tie",
+    "selected_model": "best.keras",
+    "selected_model_sha256": "3d095fbaffef382d7be0068db178a713b79558c06ae97fb043e4f0319b0479a2",
+    "test_evaluated": false
+  },
+  "stage_seconds": {
+    "stage1": 908.207096099999,
+    "stage2": 660.001357000001
+  },
+  "timestamp_utc": "2026-09-30T11:57:21.284311+00:00",
+  "training_seconds": 1568.2566450999984
+}

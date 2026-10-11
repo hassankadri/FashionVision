@@ -1,0 +1,405 @@
+
+/* FashionVision — navigation, viewport and motion refinements */
+/* Loaded AFTER styles.css in main.jsx */
+
+:root {
+  --nav-height: 78px;
+}
+
+/* Transparent navbar */
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--nav-height);
+  background: rgba(12, 12, 12, 0.16);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+  z-index: 50;
+  transition:
+    background-color 280ms ease,
+    border-color 280ms ease;
+}
+
+.site-header:hover {
+  background: rgba(18, 18, 18, 0.52);
+  border-bottom-color: rgba(255, 255, 255, 0.23);
+}
+
+/* Navbar link hover */
+
+.top-nav a {
+  position: relative;
+  padding: 9px 0;
+  transition: color 250ms ease;
+}
+
+.top-nav a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #f5f5f5;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms cubic-bezier(.2,.75,.2,1);
+}
+
+.top-nav a:hover,
+.top-nav a:focus-visible {
+  color: #fff;
+}
+
+.top-nav a:hover::after,
+.top-nav a:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* JavaScript handles smooth scroll animations */
+
+html {
+  scroll-behavior: auto !important;
+}
+
+.hero,
+.studio,
+.gallery-section,
+.about-section {
+  scroll-margin-top: var(--nav-height);
+}
+
+/* Full-screen hero */
+
+.hero {
+  position: relative;
+  min-height: 100svh;
+}
+
+.hero-inner {
+  min-height: 100svh;
+  padding-top: calc(var(--nav-height) + 20px);
+  padding-bottom: 92px;
+}
+
+/* Section navigation arrows */
+
+.section-jump {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+
+.section-jump-link {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #a5a5a5;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-decoration: none;
+  transition: color .25s ease;
+}
+
+.section-jump-circle {
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #696969;
+  border-radius: 50%;
+  font-size: 17px;
+  font-weight: 400;
+  color: #f8f8f8;
+
+  transition:
+    color .28s ease,
+    background .28s ease,
+    border-color .28s ease,
+    transform .35s cubic-bezier(.2,.8,.2,1);
+}
+
+.section-jump-link:hover,
+.section-jump-link:focus-visible {
+  color: #fff;
+}
+
+.section-jump-link:hover .section-jump-circle,
+.section-jump-link:focus-visible .section-jump-circle {
+  color: #101010;
+  background: white;
+  border-color: white;
+  transform: translateY(3px);
+}
+
+.hero > .section-jump {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+}
+
+/* Studio — fit section and arrow into the visible viewport */
+
+.studio {
+  height: calc(100svh - var(--nav-height));
+  min-height: 620px;
+  display: grid;
+
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto
+    55px;
+
+  gap: 11px;
+  padding-top: 38px;
+  padding-bottom: 8px;
+}
+
+.studio .section-top {
+  margin-bottom: 0;
+}
+
+.studio .studio-grid {
+  min-height: 0;
+  height: 100%;
+}
+
+.studio .image-stage {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.studio .stage-head,
+.studio .stage-foot {
+  flex-shrink: 0;
+}
+
+.studio .stage-body {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  --stage-height: calc(100svh - 420px);
+}
+
+.studio .analysis-panel {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #484848 transparent;
+}
+
+.studio .workspace-note {
+  margin: 0;
+}
+
+.studio > .section-jump {
+  margin: 0;
+  align-self: center;
+}
+
+/* Grad-CAM: sharp original image with color overlay */
+
+.visual-frame {
+  position: relative;
+  display: inline-block;
+  max-height: 100%;
+  max-width: 100%;
+  line-height: 0;
+  overflow: hidden;
+}
+
+.visual-frame .stage-image {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: max(225px, calc(100svh - 420px));
+  object-fit: contain;
+}
+
+.heatmap-color-layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  mix-blend-mode: color;
+  opacity: .9;
+  pointer-events: none;
+}
+
+/* Gallery layout and next-section arrow */
+
+.gallery-section {
+  min-height: calc(100svh - var(--nav-height));
+  display: flex;
+  flex-direction: column;
+  padding-top: 82px;
+  padding-bottom: 15px;
+}
+
+.gallery-section > .page-width {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.gallery-section .section-jump {
+  margin-top: auto;
+  padding-top: 22px;
+}
+
+/* Gallery thumbnail hover animations */
+
+.gallery-tiles .sample-tile {
+  position: relative;
+  transform: translateY(0) scale(1);
+
+  transition:
+    transform .3s cubic-bezier(.2,.75,.2,1),
+    border-color .25s ease,
+    background-color .25s ease,
+    box-shadow .3s ease;
+}
+
+.gallery-tiles .sample-tile img {
+  transition:
+    transform .32s cubic-bezier(.2,.8,.2,1),
+    filter .3s ease;
+}
+
+.gallery-tiles .sample-tile:hover,
+.gallery-tiles .sample-tile:focus-visible {
+  z-index: 2;
+  transform: translateY(-5px) scale(1.065);
+  border-color: white;
+  background: #383838;
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.25),
+    0 14px 25px rgba(0,0,0,.5);
+}
+
+.gallery-tiles .sample-tile:hover img,
+.gallery-tiles .sample-tile:focus-visible img {
+  transform: scale(1.13);
+  filter: contrast(1.2) brightness(1.09);
+}
+
+/* Only the existing footer back-to-top link remains */
+
+.about-section > .page-width > .section-jump {
+  display: none;
+}
+
+/* Responsive adjustments */
+
+@media (max-width: 1100px) {
+  .studio .stage-body {
+    --stage-height: calc(100svh - 420px);
+  }
+}
+
+@media (max-width: 850px) {
+  .hero-inner {
+    padding-top: calc(var(--nav-height) + 32px);
+  }
+
+  .studio {
+    height: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding-top: 95px;
+    padding-bottom: 18px;
+  }
+
+  .studio .studio-grid {
+    height: auto;
+  }
+
+  .studio .image-stage {
+    height: auto;
+    min-height: 0;
+  }
+
+  .studio .stage-body {
+    height: 450px;
+    min-height: 450px;
+    flex: none;
+    --stage-height: 450px;
+  }
+
+  .studio .visual-frame .stage-image {
+    max-height: 450px;
+  }
+
+  .studio .analysis-panel {
+    overflow: visible;
+  }
+
+  .studio > .section-jump {
+    margin-top: 12px;
+  }
+}
+
+@media (max-width: 580px) {
+  :root {
+    --nav-height: 62px;
+  }
+
+  .hero-inner {
+    padding-top: calc(var(--nav-height) + 25px);
+    padding-bottom: 105px;
+  }
+
+  .studio {
+    padding-top: 80px;
+  }
+
+  .studio .stage-body {
+    height: 340px;
+    min-height: 340px;
+    --stage-height: 340px;
+  }
+
+  .studio .visual-frame .stage-image {
+    max-height: 340px;
+  }
+
+  .gallery-section {
+    padding-top: 78px;
+  }
+
+  .section-jump-link {
+    font-size: 8px;
+  }
+
+  .hero > .section-jump {
+    bottom: 14px;
+  }
+}
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-tiles .sample-tile,
+  .gallery-tiles .sample-tile img,
+  .top-nav a::after,
+  .section-jump-circle {
+    transition: none !important;
+    transform: none !important;
+  }
+}

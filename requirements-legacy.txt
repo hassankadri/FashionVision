@@ -1,0 +1,5 @@
+# Historical classical/PCA compatibility dependencies.
+-c constraints-artifacts.txt
+scikit-learn
+numpy>=1.26,<3
+joblib>=1,<2

@@ -1,0 +1,107 @@
+{
+  "alpha": 1.0,
+  "augmentation": {
+    "contrast_factor": 0.1,
+    "fill_mode": "reflect",
+    "horizontal_flip": true,
+    "rotation_fraction": 0.03,
+    "zoom_fraction": 0.1
+  },
+  "batch_size": 32,
+  "class_names": [
+    "T-shirts",
+    "Shirts",
+    "Kurtas",
+    "Pants",
+    "Closed shoes",
+    "Handbags",
+    "Watches",
+    "Sunglasses",
+    "Backpacks",
+    "Belts"
+  ],
+  "class_weight_formula": "N_train / (10 * train_class_count)",
+  "class_weights": {
+    "0": 0.37072637902785366,
+    "1": 0.8691421254801537,
+    "2": 1.3796747967479674,
+    "3": 1.7941850220264317,
+    "4": 0.46155938349954667,
+    "5": 1.4504273504273504,
+    "6": 1.002658788774003,
+    "7": 2.409940828402367,
+    "8": 3.5231833910034602,
+    "9": 3.147449768160742
+  },
+  "created_utc": "2026-09-30T11:30:27.878894+00:00",
+  "data_counts": {
+    "test": 2546,
+    "train": 20364,
+    "validation": 2545
+  },
+  "dataset_root": "D:\\My Projects\\FashionClassification\\datasets\\fashion-product-images-small",
+  "deterministic_ops": true,
+  "devices": [
+    "PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU')"
+  ],
+  "early_stopping": {
+    "min_delta": 0,
+    "monitor": "val_accuracy",
+    "patience": 2
+  },
+  "executable": "C:\\Users\\amaan\\AppData\\Local\\FashionClassification\\venvs\\label-quality-phase2d1-20260929\\Scripts\\python.exe",
+  "family_benchmark_complete_sha256": "24a5520f30a2b889e579f1297cacf2543e512a0c77be1727ba26d173a656b130",
+  "image_size": 160,
+  "initialization_policy": "fresh official ImageNet weights; old trained checkpoint never loaded",
+  "loss": "sparse_categorical_crossentropy",
+  "manifest_directory": "D:\\My Projects\\FashionClassification\\experiments\\fashion_products_family_v1\\runs\\family_v1_a1540a6a473445bea044159eb9ae66a6",
+  "manifest_hashes": {
+    "accepted_evidence.jsonl": "f4ab3a636e53e46a96fde2a144ac12c832039d8378e0795fe769c4c824f4e473",
+    "audit.json": "e2c36fca7138d445f9716b099682220bf77bddf457def6be721040230b194a26",
+    "configuration.json": "44f26a7b11435c996722657db060fe1d755f0812a919ebc4c0edb70c23606b93",
+    "groups.jsonl": "7031c9eee119bcacec160b9b113cf5000a3c723ccfaea6e34523a01173de4bc9",
+    "image_features.jsonl": "52d8076afd714561e7f0a2220a3c2a74498cd2a6ed9e038d0dadb056f19c59a1",
+    "metadata_review.jsonl": "7b894719315968b60515957e52a06928c0b287385e0d3f7440bb1aa02ebd9d97",
+    "similarity_candidates.jsonl": "35179ba8eb3eefa8cc32d6735d146d73b064ecbc041266df7b45f0bb1b4b8bad",
+    "test.jsonl": "5e653270e0ba3ada4860d00e6535965127cf9486b2ec9f4799f152bf97e793fa",
+    "train.jsonl": "83b2a970a7a81993c7f9e9231f55b334f87f6fcd19661e4e0951f623d6136b4b",
+    "unresolved_cross_split_candidates.jsonl": "43eeb365f4573576c2ba84ce91ee8127c4d7709a925ccf9d77d8bd46f19cd35b",
+    "validation.jsonl": "f6df5cef7bcf4041481e896d4ce8a49c99f488c8df5cd6accc85dc88ffc29666"
+  },
+  "model": "MobileNetV3Small",
+  "optimizer": "Adam",
+  "original_recipe_sha256": "c5ae7b02bcb52797c6545e10442adb1af2731ae30f4e242d75cfb5141421104d",
+  "preprocessing": "Phase 3A RGB decode; Pillow bilinear resize; float32 [0,255]; built-in MobileNetV3 [-1,1] rescaling",
+  "python": "3.12.3",
+  "schema": "fashion-products-family-mobilenet/1.0",
+  "script_sha256": "2960a893424ce5c6a57fc34750da4107084e90313a6874d576092f456622c16c",
+  "seed": 42,
+  "selection": "maximum unweighted validation accuracy across both stages; earliest tie",
+  "shared_architecture_helpers_sha256": "3d36cc8dac32795f30dbfe17f73838465f604c9d6414132284d045049456952f",
+  "stage1": {
+    "backbone": "frozen",
+    "learning_rate": 0.001,
+    "max_epochs": 5
+  },
+  "stage2": {
+    "batch_normalization": "frozen",
+    "learning_rate": 0.0001,
+    "max_epochs": 8,
+    "unfreeze_from": "expanded_conv_8_expand"
+  },
+  "test_policy": "load test images only after both stages and checkpoint selection are finished; evaluate once",
+  "tf_threads": {
+    "data": 4,
+    "inter": 2,
+    "intra": 4
+  },
+  "validation_test": "deterministic, no augmentation/resampling/class weighting",
+  "versions": {
+    "keras": "3.15.1",
+    "numpy": "2.5.3",
+    "pillow": "12.3.0",
+    "scikit-learn": "1.8.0",
+    "tensorflow": "2.21.0"
+  },
+  "weights": "imagenet"
+}

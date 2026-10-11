@@ -1,0 +1,36 @@
+# Local data and generated research outputs
+/data/
+/datasets/
+/outputs/
+/experiments/
+
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Frontend dependencies and builds
+node_modules/
+/frontend/react/dist/
+/frontend/react/coverage/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and system files
+*.log
+.DS_Store
+Thumbs.db
+
+# Large CLIP model (download separately)
+/models/clip-vit-base-patch32/model_quantized.onnx
+/models/clip-vit-base-patch32/model_quantized.onnx.part
