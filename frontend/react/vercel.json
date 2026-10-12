@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/predict",
+      "destination": "https://fashion-vision-clip.vercel.app/api/predict"
+    },
+    {
+      "source": "/api/health",
+      "destination": "https://fashion-vision-clip.vercel.app/api/health"
+    }
+  ]
+}

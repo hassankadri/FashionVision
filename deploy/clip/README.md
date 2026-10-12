@@ -117,9 +117,12 @@ No prediction algorithms, session optimization settings or accuracy claims
 have been changed.
 
 CORS allows only `https://fashion-vision.vercel.app` for GET/POST and
-Content-Type. React and its deployed project are unchanged. Existing frontend
-requests still need routing to the new backend URL in a separate, authorized
-integration step; provisioning this project does not connect the live website.
+Content-Type. The frontend's `frontend/react/vercel.json` now configures exact
+rewrites for `/api/predict` and `/api/health` to
+`https://fashion-vision-clip.vercel.app`. React keeps its same-origin requests;
+the routing takes effect on the next frontend deployment. MobileNet and
+Grad-CAM paths are not rewritten to CLIP. See the
+[frontend routing instructions](../../README.md#production-frontend-routing-vercel).
 
 ## Remaining limits before production use
 

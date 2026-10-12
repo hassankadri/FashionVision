@@ -216,6 +216,42 @@ npm run dev --prefix frontend/react               # terminal 2 — Vite dev serv
 
 Vite proxies API calls to port 8765 and serves the CNN resources from its own public directory.
 
+### Production frontend routing (Vercel)
+
+The frontend's Vercel project should use Root Directory `frontend/react`,
+Framework Preset **Vite**, Build Command `npm run build`, and Output Directory
+`dist`. Keep existing compatible build settings; no new environment variables
+or dependencies are needed.
+
+[`frontend/react/vercel.json`](frontend/react/vercel.json) configures two
+exact-path external rewrites:
+
+| Same-origin frontend request | CLIP backend destination |
+|---|---|
+| `/api/predict` | `https://fashion-vision-clip.vercel.app/api/predict` |
+| `/api/health` | `https://fashion-vision-clip.vercel.app/api/health` |
+
+After the next frontend deployment, React continues requesting
+`https://fashion-vision.vercel.app/api/...`. Vercel proxies these two paths to
+CLIP without a browser redirect. The prediction request remains POST with raw
+image bytes and the existing Content-Type; prediction fields, confidence
+display, cropping and UI behavior are unchanged. The health indicator reports
+CLIP availability, not MobileNet or Grad-CAM readiness.
+
+There is no wildcard API rewrite: `/api/predict/mobilenet` and
+`/api/explain/mobilenet` are not sent to CLIP. Their production routing requires
+their own backend configuration. Local development remains unchanged:
+`vite.config.js` proxies all `/api` requests to `http://127.0.0.1:8765`.
+
+**Production upload limitation:** Although the application still allows
+15 MiB, images exceeding Vercel's **4.5 MB request-body limit** remain
+unsupported in production until the private Vercel Blob upload/retrieval flow
+is completed. Rewrites do not bypass this limit. No image compression or Blob
+uploads are enabled by this configuration.
+
+See [Vercel external rewrites](https://vercel.com/docs/routing/rewrites) and
+[function limits](https://vercel.com/docs/functions/limitations).
+
 ### Lighter installs
 
 | Goal | Command |
