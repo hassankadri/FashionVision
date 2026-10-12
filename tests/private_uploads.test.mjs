@@ -27,13 +27,16 @@ const { default: sweep } = await import('../frontend/react/api/uploads/sweep.js'
 const { postImage } = await import('../frontend/react/src/imageRequest.js');
 
 function settings() {
+  for (const name of ['UPLOAD_FRONTEND_ORIGIN', 'UPLOAD_ALLOWED_ORIGINS', 'CLIP_API_ORIGIN',
+      'PRIVATE_UPLOAD_NAMESPACE', 'CLIP_PREVIEW_BYPASS_SECRET']) delete process.env[name];
+  process.env.VERCEL_ENV = 'production';
   delete process.env.MOBILENET_API_ORIGIN;
   delete process.env.BLOB_READ_WRITE_TOKEN;
   delete process.env.BLOB_PRIVATE_HOST;
   Object.assign(process.env, { PRIVATE_UPLOADS_ENABLED: '1', UPLOAD_AUTH_SECRET: 'c'.repeat(64),
     UPSTASH_REDIS_REST_URL: 'https://example.upstash.io', UPSTASH_REDIS_REST_TOKEN: 'test',
     BLOB_STORE_ID: 'store_examplestore', VERCEL_OIDC_TOKEN: 'runtime-oidc-test-only',
-    CRON_SECRET: 'd'.repeat(32), VERCEL: '1' });
+    CRON_SECRET: 'd'.repeat(64), VERCEL: '1' });
 }
 function response() {
   return { code: 0, data: null, headers: {},
@@ -265,8 +268,8 @@ test('Vercel routing retains exact CLIP rewrites and all four frontend upload fu
   const { readFileSync, existsSync } = await import('node:fs');
   const configuration = JSON.parse(readFileSync(new URL('../frontend/react/vercel.json', import.meta.url), 'utf8'));
   assert.deepEqual(configuration.rewrites, [
-    { source: '/api/predict', destination: 'https://fashion-vision-clip.vercel.app/api/predict' },
-    { source: '/api/health', destination: 'https://fashion-vision-clip.vercel.app/api/health' },
+    { source: '/api/predict', destination: 'https://fashion-vision-clip.vercel.app/api/predict', has: [{ type: 'host', value: 'fashion-vision.vercel.app' }] },
+    { source: '/api/health', destination: 'https://fashion-vision-clip.vercel.app/api/health', has: [{ type: 'host', value: 'fashion-vision.vercel.app' }] },
   ]);
   for (const action of ['authorize', 'infer', 'cleanup', 'sweep']) {
     assert(existsSync(new URL('../frontend/react/api/uploads/' + action + '.js', import.meta.url)));
@@ -276,4 +279,119 @@ test('Vercel routing retains exact CLIP rewrites and all four frontend upload fu
   assert.notEqual(configuration.env?.PRIVATE_UPLOADS_ENABLED, '1');
   const pkg = JSON.parse(readFileSync(new URL('../frontend/react/package.json', import.meta.url), 'utf8'));
   assert.equal(pkg.dependencies['@vercel/blob'], '2.8.1');
+});
+
+
+const previewFrontend = 'https://fashion-vision-git-test-private-uploads-team.vercel.app';
+const previewBackend = 'https://fashion-vision-clip-git-test-private-uploads-team.vercel.app';
+function preview() {
+  settings();
+  Object.assign(process.env, { VERCEL_ENV: 'preview', UPLOAD_FRONTEND_ORIGIN: previewFrontend,
+    CLIP_API_ORIGIN: previewBackend, PRIVATE_UPLOAD_NAMESPACE: 'test-private-uploads-oidc' });
+}
+function previewRequest(body) {
+  const req = request(body); req.headers.origin = previewFrontend; return req;
+}
+
+test('both application secrets require 32 random bytes encoded as lowercase hex', () => {
+  for (const key of ['UPLOAD_AUTH_SECRET', 'CRON_SECRET']) {
+    for (const invalid of ['YWJjZA=='.repeat(6), 'a'.repeat(63), 'A'.repeat(64), 'd'.repeat(32), 'a'.repeat(64) + '\n']) {
+      settings(); process.env[key] = invalid;
+      assert.throws(() => control.requireSettings());
+    }
+  }
+  settings(); assert.equal(control.requireSettings().secret, 'c'.repeat(64));
+});
+
+test('Preview allows only explicitly listed exact origins and refuses production destinations', async () => {
+  const { deployment } = await import('../frontend/react/server/deployment.js');
+  preview(); control.sameOrigin(previewRequest({}));
+  const alias = 'https://fashion-vision-abcdef-team.vercel.app';
+  process.env.UPLOAD_ALLOWED_ORIGINS = JSON.stringify([alias]);
+  const req = previewRequest({}); req.headers.origin = alias; control.sameOrigin(req);
+  for (const origin of ['https://fashion-vision.vercel.app', 'https://fashion-vision-other.vercel.app',
+      previewFrontend + '.evil.example', 'null']) {
+    req.headers.origin = origin; assert.throws(() => control.sameOrigin(req));
+  }
+  for (const invalid of ['', 'https://fashion-vision-clip.vercel.app', previewBackend + '/',
+      previewBackend + '/api', previewBackend + '\n', previewBackend + '?x=1', 'http://localhost', 'https://arbitrary.vercel.app']) {
+    preview(); process.env.CLIP_API_ORIGIN = invalid; assert.throws(deployment);
+  }
+  preview(); process.env.UPLOAD_ALLOWED_ORIGINS = '["https://*.vercel.app"]'; assert.throws(deployment);
+  preview(); assert.throws(() => control.backendFor('mobilenet'));
+  settings(); process.env.CLIP_API_ORIGIN = previewBackend; assert.throws(deployment);
+  settings(); delete process.env.VERCEL_ENV; assert.throws(deployment);
+});
+
+test('Preview allocation isolates every quota, record and object from production', async () => {
+  preview();
+  let command;
+  globalThis.fetch = async (_url, options) => { command = JSON.parse(options.body); return Response.json({ result: 1 }); };
+  const result = await control.allocate(previewRequest({}), { size: 100, type: 'image/png', purpose: 'clip' });
+  const prefix = 'fashionvision-temp/preview/test-private-uploads-oidc/';
+  assert.equal(result.pathname, prefix + result.uploadId + '.png');
+  assert(command.slice(3, 8).every(key => key.startsWith('fv:preview:test-private-uploads-oidc:')));
+  const ticket = { uploadId: result.uploadId, receipt: result.receipt };
+  assert.equal(control.checkRecord(result.record, ticket), result.record);
+  assert.throws(() => control.checkRecord({ ...result.record, pathname: control.PREFIX + result.uploadId + '.png' }, ticket));
+  settings(); assert.throws(() => control.checkRecord(result.record, ticket));
+});
+
+test('Preview raw images, health and receipt inference never call production; bytes and results survive', async () => {
+  preview(); process.env.CLIP_PREVIEW_BYPASS_SECRET = 'test-preview-protection';
+  const { default: predict } = await import('../frontend/react/api/predict.js');
+  const { default: health } = await import('../frontend/react/api/health.js');
+  const { default: infer } = await import('../frontend/react/api/uploads/infer.js');
+  const ticket = { uploadId: 'a'.repeat(32), receipt: 'b'.repeat(64) };
+  const record = { mime: 'image/png', size: 100, purpose: 'clip', status: 'issued',
+    expires: Math.floor(Date.now()/1000) + 600, receiptHash: control.receiptHash(ticket.receipt),
+    pathname: 'fashionvision-temp/preview/test-private-uploads-oidc/' + ticket.uploadId + '.png' };
+  const calls = [], prediction = { prediction: 'Shirt', confidence: 0.75, predictions: [] };
+  globalThis.fetch = async (url, options) => {
+    if (url.endsWith('.upstash.io')) return Response.json({ result: JSON.stringify(record) });
+    assert(url.startsWith(previewBackend + '/'));
+    assert.equal(options.headers['x-vercel-protection-bypass'], 'test-preview-protection');
+    assert.equal(options.redirect, 'error');
+    calls.push([url, options]); return Response.json(prediction);
+  };
+  const bytes = Buffer.from([0, 255, 10, 13, 42]);
+  const req = previewRequest(bytes); req.headers['content-type'] = 'image/png';
+  const raw = await predict.fetch(new Request(previewFrontend + '/api/predict', req));
+  assert.equal(raw.status, 200); assert.deepEqual(await raw.json(), prediction); assert.deepEqual(calls[0][1].body, bytes);
+  const healthRes = await health.fetch(new Request(previewFrontend + '/api/health'));
+  assert.equal(healthRes.status, 200); assert.deepEqual(await healthRes.json(), prediction);
+  const result = response(); await infer(previewRequest(ticket), result);
+  assert.equal(result.code, 200); assert.deepEqual(result.data, prediction);
+  assert.deepEqual(calls.map(call => call[0]), ['/api/predict', '/api/health', '/api/predict/blob'].map(path => previewBackend + path));
+  process.env.CLIP_API_ORIGIN = 'https://fashion-vision-clip.vercel.app';
+  const blocked = await predict.fetch(new Request(previewFrontend + '/api/predict', req)); assert.equal(blocked.status, 503);
+  assert.equal(calls.length, 3);
+});
+
+test('Preview sweep cannot delete production or another Preview namespace, even when disabled', async () => {
+  preview(); process.env.PRIVATE_UPLOADS_ENABLED = '0';
+  const prefix = 'fashionvision-temp/preview/test-private-uploads-oidc/';
+  const expected = prefix + 'a'.repeat(32) + '.png';
+  const deleted = [];
+  globalThis.blobFake = {
+    list: async options => {
+      assert.equal(options.prefix, prefix);
+      return { hasMore: false, blobs: [expected, control.PREFIX + 'a'.repeat(32) + '.png',
+        'fashionvision-temp/preview/other/' + 'a'.repeat(32) + '.png'].map(pathname => ({ pathname, uploadedAt: new Date(0) })) };
+    },
+    del: async paths => deleted.push(...paths),
+  };
+  const res = response(); await sweep({ method: 'GET', headers: { authorization: 'Bearer ' + process.env.CRON_SECRET } }, res);
+  assert.equal(res.code, 200); assert.deepEqual(deleted, [expected]);
+  const disabled = response(); await authorize(previewRequest({ size: 100, type: 'image/png', purpose: 'clip' }), disabled);
+  assert.equal(disabled.code, 503);
+});
+
+test('production defaults retain original destinations and never forward Preview bypass credentials', async () => {
+  settings(); process.env.CLIP_PREVIEW_BYPASS_SECRET = 'must-not-forward';
+  const { deployment, backendHeaders } = await import('../frontend/react/server/deployment.js');
+  assert.equal(deployment().clip, 'https://fashion-vision-clip.vercel.app');
+  assert.equal(deployment().prefix, control.PREFIX);
+  assert.equal(control.keyFor('abc'), 'fv:upload:v1:abc');
+  assert.deepEqual(backendHeaders(), {});
 });

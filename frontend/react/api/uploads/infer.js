@@ -1,5 +1,7 @@
 import { backendFor, getRecord, jsonBody, receiptBody, sameOrigin, sendError, UploadError } from '../../server/uploads.js';
 
+import { backendHeaders } from '../../server/deployment.js';
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   try {
@@ -9,7 +11,7 @@ export default async function handler(req, res) {
     if (record.status !== 'issued') throw new UploadError(403, 'Invalid or expired upload authorization.');
     const [origin, endpoint] = backendFor(record.purpose);
     const response = await fetch(origin + endpoint, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(record.purpose === 'clip' ? backendHeaders() : {}) },
       body: JSON.stringify(ticket), redirect: 'error', signal: AbortSignal.timeout(275000),
     });
     const chunks = [];

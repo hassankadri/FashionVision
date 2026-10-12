@@ -41,6 +41,24 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def deployment():
+    environment = os.environ.get("VERCEL_ENV")
+    frontend = os.environ.get("UPLOAD_FRONTEND_ORIGIN", "")
+    namespace = os.environ.get("PRIVATE_UPLOAD_NAMESPACE", "")
+    if environment == "production":
+        if namespace or frontend not in ("", "https://fashion-vision.vercel.app"):
+            raise HTTPException(503, "Deployment routing is not configured.")
+        return {"environment": environment, "frontend_origin": "https://fashion-vision.vercel.app",
+                "prefix": PREFIX, "redis_prefix": "fv:"}
+    if (environment != "preview" or not re.fullmatch(
+            r"https://fashion-vision-(?!clip-)[a-z0-9]+(?:-[a-z0-9]+)*\.vercel\.app", frontend)
+            or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", namespace) or len(namespace) > 64):
+        raise HTTPException(503, "Deployment routing is not configured.")
+    return {"environment": environment, "frontend_origin": frontend,
+            "prefix": f"fashionvision-temp/preview/{namespace}/",
+            "redis_prefix": f"fv:preview:{namespace}:"}
+
+
 def settings():
     redis_url = os.environ.get("UPSTASH_REDIS_REST_URL", "")
     secret = os.environ.get("UPLOAD_AUTH_SECRET", "")
@@ -55,13 +73,13 @@ def settings():
     except ValueError:
         valid_url = False
     if (os.environ.get("PRIVATE_UPLOADS_ENABLED") != "1" or not valid_url
-            or not re.fullmatch(r"[a-fA-F0-9]{64}", secret)
+            or not re.fullmatch(r"[a-f0-9]{64}", secret)
             or os.environ.get("VERCEL") != "1" or not re.fullmatch(r"[a-z0-9]+", store_id)
             or (expected_host and expected_host != blob_host)
             or not os.environ.get("UPSTASH_REDIS_REST_TOKEN")):
         raise HTTPException(status_code=503, detail="Private image uploads are not configured.")
     return {"redis_url": redis_url.rstrip("/"), "redis_token": os.environ["UPSTASH_REDIS_REST_TOKEN"],
-            "blob_host": blob_host, "secret": secret}
+            "blob_host": blob_host, "secret": secret, **deployment()}
 
 
 @contextmanager
@@ -121,14 +139,14 @@ def receipt_body(body):
 def claim(ticket, purpose, config):
     receipt_body(ticket)
     digest = hashlib.sha256(ticket["receipt"].encode()).hexdigest()
-    value = redis(["EVAL", CLAIM, 1, f"fv:upload:v1:{ticket['uploadId']}", digest, purpose], config)
+    value = redis(["EVAL", CLAIM, 1, f"{config['redis_prefix']}upload:v1:{ticket['uploadId']}", digest, purpose], config)
     try:
         record = json.loads(value) if value else {}
         mime = record["mime"]
         if (record["receiptHash"] != digest or record["purpose"] != purpose or record["status"] != "processing"
                 or type(record["size"]) is not int or not 0 < record["size"] <= MAX_BYTES
                 or mime not in MIME_FORMATS
-                or record["pathname"] != f"{PREFIX}{ticket['uploadId']}.{MIME_FORMATS[mime][0]}"):
+                or record["pathname"] != f"{config['prefix']}{ticket['uploadId']}.{MIME_FORMATS[mime][0]}"):
             raise ValueError("Invalid authorization record")
         return record
     except (KeyError, TypeError, ValueError):
@@ -189,10 +207,12 @@ def validate_image(payload, mime):
 def cleanup(ticket, config):
     proof = hmac.new(config["secret"].encode(),
                      f"cleanup:{ticket['uploadId']}:{ticket['receipt']}".encode(), hashlib.sha256).hexdigest()
+    headers = {"X-FV-Cleanup-Proof": proof}
+    if config["environment"] == "preview" and os.environ.get("FRONTEND_PREVIEW_BYPASS_SECRET"):
+        headers["x-vercel-protection-bypass"] = os.environ["FRONTEND_PREVIEW_BYPASS_SECRET"]
     for _attempt in range(2):
         try:
-            result = _json_request("https://fashion-vision.vercel.app/api/uploads/cleanup", ticket,
-                                   {"X-FV-Cleanup-Proof": proof})
+            result = _json_request(config["frontend_origin"] + "/api/uploads/cleanup", ticket, headers)
             if result.get("status") == "deleted":
                 return True
         except Exception:

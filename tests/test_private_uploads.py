@@ -13,7 +13,8 @@ from backend import private_uploads as uploads
 TICKET = {"uploadId": "a" * 32, "receipt": "b" * 64}
 CONFIG = {"redis_url": "https://example.upstash.io", "redis_token": "test",
           "blob_host": "examplestore.private.blob.vercel-storage.com",
-          "secret": "c" * 64}
+          "secret": "c" * 64, "environment": "production", "prefix": uploads.PREFIX,
+          "redis_prefix": "fv:", "frontend_origin": "https://fashion-vision.vercel.app"}
 
 
 def png():
@@ -38,6 +39,45 @@ class Response(io.BytesIO):
 
 
 class PrivateUploadChecks(unittest.TestCase):
+    def test_preview_configuration_and_secret_validation(self):
+        environment = {"PRIVATE_UPLOADS_ENABLED": "1", "VERCEL": "1", "VERCEL_ENV": "preview",
+                       "BLOB_STORE_ID": "store_examplestore", "UPSTASH_REDIS_REST_URL": CONFIG["redis_url"],
+                       "UPSTASH_REDIS_REST_TOKEN": "test", "UPLOAD_AUTH_SECRET": CONFIG["secret"],
+                       "PRIVATE_UPLOAD_NAMESPACE": "test-private-uploads-oidc",
+                       "UPLOAD_FRONTEND_ORIGIN": "https://fashion-vision-git-test-team.vercel.app"}
+        with patch.dict("os.environ", environment, clear=True):
+            config = uploads.settings()
+            self.assertEqual(config["redis_prefix"], "fv:preview:test-private-uploads-oidc:")
+            self.assertEqual(config["prefix"], "fashionvision-temp/preview/test-private-uploads-oidc/")
+        for invalid in ({"UPLOAD_AUTH_SECRET": "YWJjZA==" * 6}, {"UPLOAD_AUTH_SECRET": "A" * 64},
+                        {"UPLOAD_FRONTEND_ORIGIN": "https://fashion-vision.vercel.app"},
+                        {"UPLOAD_FRONTEND_ORIGIN": environment["UPLOAD_FRONTEND_ORIGIN"] + "/"},
+                        {"UPLOAD_FRONTEND_ORIGIN": "https://attacker.vercel.app"},
+                        {"PRIVATE_UPLOAD_NAMESPACE": ""}, {"VERCEL_ENV": ""}):
+            with patch.dict("os.environ", {**environment, **invalid}, clear=True), self.assertRaises(HTTPException):
+                uploads.settings()
+
+    def test_preview_claim_and_cleanup_are_isolated_from_production(self):
+        config = {**CONFIG, "environment": "preview", "redis_prefix": "fv:preview:test-private-uploads-oidc:",
+                  "prefix": "fashionvision-temp/preview/test-private-uploads-oidc/",
+                  "frontend_origin": "https://fashion-vision-git-test-team.vercel.app"}
+        preview_record = {**record(100), "pathname": config["prefix"] + TICKET["uploadId"] + ".png"}
+        with patch.object(uploads, "redis", return_value=json.dumps(preview_record)) as redis:
+            uploads.claim(TICKET, "clip", config)
+            self.assertEqual(redis.call_args.args[0][3], config["redis_prefix"] + "upload:v1:" + TICKET["uploadId"])
+        with patch.object(uploads, "redis", return_value=json.dumps(record(100))), self.assertRaises(HTTPException):
+            uploads.claim(TICKET, "clip", config)
+        with patch.dict("os.environ", {"FRONTEND_PREVIEW_BYPASS_SECRET": "test-bypass"}, clear=True), \
+                patch.object(uploads, "_json_request", return_value={"status": "deleted"}) as request:
+            self.assertTrue(uploads.cleanup(TICKET, config))
+            self.assertEqual(request.call_args.args[0], config["frontend_origin"] + "/api/uploads/cleanup")
+            self.assertEqual(request.call_args.args[1], TICKET)
+            self.assertEqual(request.call_args.args[2]["x-vercel-protection-bypass"], "test-bypass")
+            self.assertEqual(len(request.call_args.args[2]["X-FV-Cleanup-Proof"]), 64)
+            self.assertTrue(uploads.cleanup(TICKET, CONFIG))
+            self.assertEqual(request.call_args.args[0], "https://fashion-vision.vercel.app/api/uploads/cleanup")
+            self.assertNotIn("x-vercel-protection-bypass", request.call_args.args[2])
+
     def test_disabled_fails_closed(self):
         with patch.dict("os.environ", {}, clear=True), self.assertRaises(HTTPException) as failure:
             uploads.settings()
@@ -132,7 +172,7 @@ class PrivateUploadChecks(unittest.TestCase):
             self.assertFalse(uploads.cleanup(TICKET, CONFIG))
 
     def test_settings_use_connected_store_without_static_tokens(self):
-        environment = {"PRIVATE_UPLOADS_ENABLED": "1", "VERCEL": "1", "BLOB_STORE_ID": "store_examplestore",
+        environment = {"PRIVATE_UPLOADS_ENABLED": "1", "VERCEL": "1", "VERCEL_ENV": "production", "BLOB_STORE_ID": "store_examplestore",
                        "UPSTASH_REDIS_REST_URL": CONFIG["redis_url"], "UPSTASH_REDIS_REST_TOKEN": "test",
                        "UPLOAD_AUTH_SECRET": CONFIG["secret"]}
         with patch.dict("os.environ", environment, clear=True):

@@ -3,11 +3,23 @@
   "rewrites": [
     {
       "source": "/api/predict",
-      "destination": "https://fashion-vision-clip.vercel.app/api/predict"
+      "destination": "https://fashion-vision-clip.vercel.app/api/predict",
+      "has": [
+        {
+          "type": "host",
+          "value": "fashion-vision.vercel.app"
+        }
+      ]
     },
     {
       "source": "/api/health",
-      "destination": "https://fashion-vision-clip.vercel.app/api/health"
+      "destination": "https://fashion-vision-clip.vercel.app/api/health",
+      "has": [
+        {
+          "type": "host",
+          "value": "fashion-vision.vercel.app"
+        }
+      ]
     }
   ],
   "fluid": true,
@@ -23,6 +35,12 @@
     },
     "api/uploads/sweep.js": {
       "maxDuration": 60
+    },
+    "api/predict.js": {
+      "maxDuration": 300
+    },
+    "api/health.js": {
+      "maxDuration": 300
     }
   },
   "crons": [

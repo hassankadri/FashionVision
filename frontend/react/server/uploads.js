@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { isIP } from 'node:net';
+import { deployment } from './deployment.js';
 
 export const MAX_BYTES = 15 * 1024 * 1024;
 export const PREFIX = 'fashionvision-temp/v1/';
@@ -32,7 +33,7 @@ export function requireSettings() {
     throw new UploadError(503, 'Private image uploads are not configured.');
   }
   const secret = process.env.UPLOAD_AUTH_SECRET;
-  if (!/^[a-f0-9]{64}$/i.test(secret || '')) {
+  if (typeof secret !== 'string' || secret.length !== 64 || !/^[a-f0-9]{64}$/.test(secret)) {
     throw new UploadError(503, 'Private image uploads are not configured.');
   }
   let url;
@@ -40,9 +41,10 @@ export function requireSettings() {
   if (!url || url.protocol !== 'https:' || !url.hostname.endsWith('.upstash.io') ||
       (url.port && url.port !== '443') || url.username || url.password || url.search || url.hash || !['', '/'].includes(url.pathname) ||
       !process.env.UPSTASH_REDIS_REST_TOKEN ||
-      !/^[A-Za-z0-9_-]{32,}$/.test(process.env.CRON_SECRET || '')) {
+      (process.env.CRON_SECRET || '').length !== 64 || !/^[a-f0-9]{64}$/.test(process.env.CRON_SECRET || '')) {
     throw new UploadError(503, 'Private image uploads are not configured.');
   }
+  deployment();
   requireBlobOidc();
   return { secret, redisUrl: url.origin, redisToken: process.env.UPSTASH_REDIS_REST_TOKEN };
 }
@@ -65,7 +67,7 @@ export async function redis(command) {
 }
 
 export function sameOrigin(req) {
-  if (req.headers.origin !== 'https://fashion-vision.vercel.app' ||
+  if (!deployment().origins.includes(req.headers.origin) ||
       (req.headers['sec-fetch-site'] && req.headers['sec-fetch-site'] !== 'same-origin')) {
     throw new UploadError(403, 'This upload request is not allowed.');
   }
@@ -117,7 +119,7 @@ export function receiptBody(body) {
   }
   return body;
 }
-export const keyFor = id => 'fv:upload:v1:' + id;
+export const keyFor = id => deployment().redisPrefix + 'upload:v1:' + id;
 export const receiptHash = value => createHash('sha256').update(value).digest('hex');
 
 export function checkRecord(record, ticket, { expired = false } = {}) {
@@ -125,7 +127,7 @@ export function checkRecord(record, ticket, { expired = false } = {}) {
   if (!record || !['clip', 'mobilenet', 'gradcam'].includes(record.purpose) ||
       !Number.isSafeInteger(record.size) || record.size < 1 || record.size > MAX_BYTES ||
       !Number.isSafeInteger(record.expires) || !Object.hasOwn(MIME_EXT, record.mime) ||
-      record.pathname !== PREFIX + ticket.uploadId + '.' + MIME_EXT[record.mime] ||
+      record.pathname !== deployment().prefix + ticket.uploadId + '.' + MIME_EXT[record.mime] ||
       record.receiptHash !== receiptHash(ticket.receipt) ||
       (!expired && record.expires <= Math.floor(Date.now() / 1000))) {
     throw new UploadError(403, 'Invalid or expired upload authorization.');
@@ -141,7 +143,9 @@ export async function getRecord(ticket, options) {
 }
 
 export function backendFor(purpose) {
-  if (purpose === 'clip') return ['https://fashion-vision-clip.vercel.app', '/api/predict/blob'];
+  const config = deployment();
+  if (purpose === 'clip') return [config.clip, '/api/predict/blob'];
+  if (config.environment === 'preview') throw new UploadError(503, 'MobileNet Preview uploads are not configured.');
   const origin = process.env.MOBILENET_API_ORIGIN || '';
   if (!/^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin) || origin === 'https://fashion-vision-clip.vercel.app') {
     throw new UploadError(503, 'MobileNet private uploads are not configured.');
@@ -172,14 +176,15 @@ export async function allocate(req, body) {
   const now = Math.floor(Date.now() / 1000);
   const uploadId = randomBytes(16).toString('hex');
   const receipt = randomBytes(32).toString('hex');
-  const pathname = PREFIX + uploadId + '.' + MIME_EXT[body.type];
+  const pathname = deployment().prefix + uploadId + '.' + MIME_EXT[body.type];
   const record = { pathname, mime: body.type, size: body.size, purpose: body.purpose,
     expires: now + RECEIPT_TTL, receiptHash: receiptHash(receipt), status: 'issued' };
   const ip = clientKey(req);
   const day = new Date().toISOString().slice(0, 10);
   const month = day.slice(0, 7);
-  const keys = ['fv:rate:' + ip + ':' + Math.floor(now / 600), 'fv:rate:' + ip + ':' + day,
-    'fv:quota:day:' + day, 'fv:quota:month:' + month, keyFor(uploadId)];
+  const prefix = deployment().redisPrefix;
+  const keys = [prefix + 'rate:' + ip + ':' + Math.floor(now / 600), prefix + 'rate:' + ip + ':' + day,
+    prefix + 'quota:day:' + day, prefix + 'quota:month:' + month, keyFor(uploadId)];
   const result = await redis(['EVAL', ALLOCATE, 5, ...keys, ...LIMITS,
     600, 86400, 86400, 35 * 86400, JSON.stringify(record), RECORD_TTL]);
   if (result !== 1) throw new UploadError(429, 'The upload limit has been reached. Please try again later.');
