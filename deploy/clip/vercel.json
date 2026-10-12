@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "fluid": true,
+  "buildCommand": "python stage_runtime.py",
+  "functions": {
+    "app.py": {
+      "maxDuration": 300,
+      "includeFiles": "models/clip-vit-base-patch32/**",
+      "excludeFiles": "{stage_runtime.py,README.md,.venv/**,.vercel/**,**/__pycache__/**,**/*.part}"
+    }
+  }
+}

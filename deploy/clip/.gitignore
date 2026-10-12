@@ -1,0 +1,9 @@
+# Build-generated copies; canonical sources remain in the repository root.
+/ml/
+/scripts/
+/models/
+/NOTICE.md
+/.vercel/
+/.venv/
+__pycache__/
+*.py[cod]
