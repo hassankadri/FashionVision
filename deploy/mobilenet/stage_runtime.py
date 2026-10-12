@@ -8,6 +8,8 @@ import shutil
 PROJECT_ROOT = Path(__file__).resolve().parent
 REPOSITORY_ROOT = PROJECT_ROOT.parents[1]
 RUNTIME_FILES = (
+    "backend/__init__.py",
+    "backend/private_uploads.py",
     "ml/__init__.py",
     "ml/mobilenet_classifier.py",
     "ml/mobilenet_gradcam.py",

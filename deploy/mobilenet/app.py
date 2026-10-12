@@ -8,6 +8,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from backend.private_uploads import register_blob_routes
 from ml import mobilenet_classifier
 
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
@@ -132,3 +133,22 @@ async def explain_mobilenet(request: Request) -> dict[str, object]:
             status_code=503,
             detail="MobileNet explanation is unavailable. Contact the server operator.",
         ) from error
+
+
+def _mobile_blob(payload, mime, *, explain=False):
+    try:
+        operation = mobilenet_classifier.explain if explain else mobilenet_classifier.classify
+        return operation(payload, mime)
+    except mobilenet_classifier.InvalidImage as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except mobilenet_classifier.ModelUnavailable as error:
+        _invalidate_readiness(prediction_failed=not explain)
+        detail = ("MobileNet explanation is unavailable. Contact the server operator." if explain
+                  else "MobileNet is unavailable. Contact the server operator.")
+        raise HTTPException(status_code=503, detail=detail) from error
+
+
+register_blob_routes(app, {
+    "/api/predict/mobilenet/blob": ("mobilenet", lambda payload, mime: _mobile_blob(payload, mime)),
+    "/api/explain/mobilenet/blob": ("gradcam", lambda payload, mime: _mobile_blob(payload, mime, explain=True)),
+})

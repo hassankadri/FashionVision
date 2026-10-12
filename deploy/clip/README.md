@@ -27,8 +27,12 @@ upload just this folder: the build requires canonical files outside it.
 
 Set **`VERCEL_SUPPORT_LARGE_FUNCTIONS=0`** for Production and Preview to enforce
 the standard Python 500 MB limit instead of relying on the Large Functions beta.
-No model-download token, TensorFlow environment variables, or Blob secret is
-required by this backend. Do not copy unrelated environment files or secrets.
+No model-download token or TensorFlow configuration is required. Raw inference
+does not require Blob. Optional private-upload inference uses the connected store's
+`BLOB_STORE_ID`, runtime OIDC and shared Redis/security settings; it does not require
+a static Blob token. Keep `PRIVATE_UPLOADS_ENABLED=0` or absent. The official
+lightweight OIDC dependencies are listed in `requirements.txt`; no full Vercel
+platform SDK is added. Do not copy unrelated environment files or secrets.
 
 Vercel discovers the exported `app` in this directory's root `app.py`. It is
 an API-only FastAPI application with no React production-build dependency.
@@ -126,12 +130,14 @@ Grad-CAM paths are not rewritten to CLIP. See the
 
 ## Remaining limits before production use
 
-**Uploads:** The API still permits 15 MiB, with no compression. Vercel rejects
-direct request bodies above 4.5 MB before FastAPI sees them. This deployment
-alone therefore cannot support the full existing upload allowance. The planned
-private Vercel Blob upload and authenticated backend retrieval flow remains to
-be implemented. No public Blob upload endpoint or new API contract is introduced
-here; the existing private store is not accessed by this backend.
+**Uploads:** The API still permits 15 MiB, without compression. Small images
+use the original raw endpoint. The additional `POST /api/predict/blob` accepts
+only an opaque, single-use receipt and privately retrieves the authorized
+object. No arbitrary fetch URL or public image endpoint is added.
+The shared transport module is staged with no new Python dependencies.
+Configure the private store, free Redis state and secrets before enabling
+large uploads. See [private upload setup](../../docs/PRIVATE_UPLOADS.md).
+Direct raw requests above Vercel's 4.5 MB cap remain rejected by the platform.
 
 **Cold starts and memory:** Prior Windows profiling recorded approximately
 343 MiB peak resident RAM, 519 MiB peak private commit, and 4.82 seconds from

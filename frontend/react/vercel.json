@@ -9,5 +9,26 @@
       "source": "/api/health",
       "destination": "https://fashion-vision-clip.vercel.app/api/health"
     }
+  ],
+  "fluid": true,
+  "functions": {
+    "api/uploads/authorize.js": {
+      "maxDuration": 30
+    },
+    "api/uploads/infer.js": {
+      "maxDuration": 300
+    },
+    "api/uploads/cleanup.js": {
+      "maxDuration": 30
+    },
+    "api/uploads/sweep.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/uploads/sweep",
+      "schedule": "0 3 * * *"
+    }
   ]
 }

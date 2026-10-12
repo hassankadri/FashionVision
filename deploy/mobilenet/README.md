@@ -32,11 +32,13 @@ and Preview:
 | `KERAS_BACKEND` | `tensorflow` | Select the backend used by the existing model |
 | `KERAS_HOME` | `/tmp/keras` | Keep any Keras configuration/cache writes in writable temporary storage |
 
-No Blob token is required or read by this implementation. When the private Blob
-flow is implemented, connect the existing **private** store to the new backend
-project and provide its credentials through Vercel's server-side environment
-settings. Never put a read-write token in React, a `VITE_*` variable or Git.
-Do not change the store to public.
+Raw inference does not require Blob. The prepared private-upload routes use
+OIDC and the official lightweight Python OIDC helper, without a static Blob token.
+Connect the existing **private** store to this backend project in the intended
+environment and configure the shared Redis/security settings from
+[private upload setup](../../docs/PRIVATE_UPLOADS.md). Keep
+`PRIVATE_UPLOADS_ENABLED=0` or absent. Never put runtime tokens or server secrets
+in React, a `VITE_*` variable or Git. Do not change the store to public.
 
 Use Git import from the whole repository with the source-files option above
 enabled. Uploading only this directory omits its canonical build inputs.
@@ -94,17 +96,14 @@ new backend is not connected to the live website by these files.
 
 ## Limitations before deployment
 
-1. **Private Blob upload integration is pending.** Vercel Functions reject
-   bodies larger than 4.5 MB before FastAPI runs. The code still permits 15 MiB,
-   but raw uploads over the platform cap cannot reach it on Vercel. There is no
-   compression, lower application limit, public upload route or Blob SDK here.
-   The future flow must transfer the original image directly to the private
-   store using a supported scoped authorization flow, then send a small
-   authorized object reference to the backend. Forwarding the full image through
-   another Vercel Function would retain the same body-size problem.
-   Reference validation, authenticated private reads, streamed 15 MiB enforcement,
-   abuse controls, retention/deletion and client integration still need design
-   and implementation; an arbitrary fetch-URL endpoint must not be introduced.
+1. **Private uploads require configuration and deployment.** The added
+   `POST /api/predict/mobilenet/blob` and `POST /api/explain/mobilenet/blob`
+   interfaces accept single-use receipts, privately retrieve validated images,
+   and call the existing classifiers unchanged. The shared transport module
+   is staged without new Python dependencies. Set the frontend's
+   `MOBILENET_API_ORIGIN` only after this backend is deployed and verified.
+   See [private upload setup](../../docs/PRIVATE_UPLOADS.md). Raw requests above
+   Vercel's 4.5 MB cap remain unsupported; the application limit stays 15 MiB.
 2. **Large Functions eligibility and Linux packaging remain unverified.**
    TensorFlow exceeds the standard Python bundle budget. The beta permits up
    to 5 GB but does not provide additional RAM. Verify the actual Linux bundle
@@ -114,10 +113,11 @@ new backend is not connected to the live website by these files.
    331 MiB with Grad-CAM, with first results around 15.7 s and 9.7 s respectively.
    Those are preliminary single-process measurements on a six-logical-CPU
    machine, not Vercel performance guarantees. Avoid frequent health polling.
-4. **Production connection remains pending.** The React deployment, its routing
-   and CLIP endpoint have not been changed. Choose and verify frontend/API
-   routing when the private upload flow is ready. This backend alone does not
-   provide `POST /api/predict` for CLIP.
+4. **MobileNet production connection remains pending.** Large-image routing
+   uses the frontend gateway and the configured `MOBILENET_API_ORIGIN`.
+   Small-image MobileNet and Grad-CAM paths still need their own production
+   routing; neither is redirected to CLIP. This backend does not provide
+   `POST /api/predict` for CLIP.
 5. **Free usage is finite.** Confirm the new project's Hobby eligibility, active
    CPU/memory usage and the existing private Blob store's quotas. No account
    settings, credentials or Blob resources have been inspected or changed.

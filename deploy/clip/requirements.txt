@@ -22,3 +22,8 @@ pydantic-core==2.50.1
 starlette==1.7.0
 typing-extensions==4.16.0
 typing-inspection==0.4.4
+
+# Official lightweight OIDC/request-context support; no full Vercel platform SDK.
+vercel-oidc==0.10.0
+vercel-headers==0.7.2
+httpx2==2.13.1

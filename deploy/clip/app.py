@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
 
+from backend.private_uploads import register_blob_routes
 from ml import photo_classifier
 from scripts.download_photo_model import FILES, TARGET, sha256
 
@@ -128,3 +129,8 @@ async def predict(request: Request) -> dict[str, object]:
     if len(payload) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="Images must be 15 MB or smaller.")
     return await run_in_threadpool(_predict, payload)
+
+
+register_blob_routes(app, {
+    "/api/predict/blob": ("clip", lambda payload, mime: _predict(payload)),
+})

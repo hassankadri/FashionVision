@@ -1,6 +1,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import PrivacyPolicy from './PrivacyPolicy.jsx';
+import { postImage } from './imageRequest.js';
 import './crop.css';
 
 const MAX_BYTES = 15 * 1024 * 1024;
@@ -8,20 +9,6 @@ const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/bmp']);
 const clamp = number => Math.min(1, Math.max(0, Number(number) || 0));
 const pct = number => `${(clamp(number) * 100).toFixed(1)}%`;
 const filename = name => name.length > 30 ? `${name.slice(0, 26)}…` : name;
-
-async function postImage(endpoint, file, signal) {
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': file.type },
-    body: file,
-    signal,
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(typeof data.detail === 'string' ? data.detail : `Request failed (HTTP ${response.status}).`);
-  }
-  return data;
-}
 
 function Arrow({ diagonal = false }) {
   return <span aria-hidden="true">{diagonal ? '↗' : '→'}</span>;

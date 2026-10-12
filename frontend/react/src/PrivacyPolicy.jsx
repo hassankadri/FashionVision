@@ -20,9 +20,11 @@ export default function PrivacyPolicy() {
         <section aria-labelledby="privacy-images">
           <h2 id="privacy-images">Image uploads and AI processing</h2>
           <p>
-            When you request a prediction or explanation, your selected image is sent
-            to the application's backend and processed in application/server memory.
-            The application does not intentionally save uploaded images to permanent storage.
+            Small images are sent directly to the application's backend and processed
+            in application/server memory. When private uploads are enabled, larger images
+            are uploaded directly to private Vercel Blob storage and retrieved by the
+            backend for predictions or explanations. The application uses this storage
+            temporarily and does not offer public access to uploaded images.
           </p>
           <p>
             MobileNetV3 and CLIP predictions, and Grad-CAM explanations, run through
@@ -35,8 +37,9 @@ export default function PrivacyPolicy() {
         <section aria-labelledby="privacy-personal">
           <h2 id="privacy-personal">Personal information</h2>
           <p>
-            The application currently has no user accounts or user database.
-            Uploaded images and their embedded metadata may themselves contain personal
+            The application has no user accounts or user profiles. The private-upload
+            feature stores temporary authorization records and security counters in a
+            shared data store. Uploaded images and their embedded metadata may contain personal
             information. Please avoid submitting unnecessary personal or sensitive information.
           </p>
           <p>
@@ -53,16 +56,22 @@ export default function PrivacyPolicy() {
             timestamps, response status codes, and diagnostic errors. The application
             does not deliberately log uploaded filenames, image contents, or successful
             prediction results in its web request handlers. Infrastructure logging
-            and retention depend on the hosting configuration.
+            and retention depend on the hosting configuration. For private-upload abuse
+            protection, the server uses the requester's IP address to create a keyed,
+            pseudonymized rate-limit identifier. Temporary authorization records include
+            generated object identifiers, declared image size and type, expiry, receipt
+            hashes, and processing or cleanup state; they do not contain image bytes or
+            prediction results.
           </p>
         </section>
 
         <section aria-labelledby="privacy-tracking">
           <h2 id="privacy-tracking">Cookies and tracking</h2>
           <p>
-            No application-level analytics, cookies, or browser storage tracking
-            is currently used by FashionVision. In-memory interface state supports
-            image previews and results rather than tracking. Hosting providers may
+            FashionVision does not add application analytics or browser tracking cookies
+            or storage. In-memory interface state supports image previews and results.
+            Private-upload security counters are stored server-side for abuse protection,
+            rather than advertising or behavioral analytics. Hosting providers may
             introduce their own cookies or other technologies, depending on the deployment.
           </p>
         </section>
@@ -75,29 +84,42 @@ export default function PrivacyPolicy() {
             information such as your IP address and browser information.
           </p>
           <p>
-            Hosting providers may process technical information, uploaded image
-            requests, and prediction or explanation responses as part of delivering
-            the service. Their processing, storage locations, and retention practices
-            depend on the selected providers and configuration.
+            Vercel hosts the website and CLIP API and provides the private Blob store.
+            When private uploads are enabled, Upstash Redis processes temporary upload
+            authorization records and pseudonymized security counters. These services
+            may also process technical request information. Their processing, storage
+            locations, infrastructure logs, caches, and retention practices depend on
+            the providers and deployment configuration.
           </p>
         </section>
 
         <section aria-labelledby="privacy-retention">
           <h2 id="privacy-retention">Data retention</h2>
           <p>
-            The server-side application does not intentionally retain uploaded images after
-            processing. In-memory processing is not a guarantee that every copy is
-            immediately or permanently erased. Infrastructure buffering, logs, and
-            retention depend on hosting configuration; no fixed infrastructure
-            retention period is specified here.
+            For private uploads, the application attempts to delete the temporary object
+            after prediction or explanation, including failures. A protected daily cleanup
+            job is configured to remove abandoned objects older than one hour. This is a
+            cleanup grace period, not a guaranteed deletion deadline: daily scheduling,
+            interrupted requests, outages, quota limits, or failed jobs can leave files
+            stored longer, sometimes beyond a day.
+          </p>
+          <p>
+            Individual authorization records expire 48 hours after their last state update.
+            Per-IP security counters expire after up to ten minutes or 24 hours; global
+            monthly counters contain no IP identifiers and expire after 35 days. Deletion
+            and in-memory processing do not guarantee immediate or permanent erasure of
+            every copy. Provider caches, buffering, backups, logs, and infrastructure
+            retention remain subject to provider practices and hosting configuration.
           </p>
         </section>
 
         <section aria-labelledby="privacy-security">
           <h2 id="privacy-security">Security</h2>
           <p>
-            The application limits upload sizes and supported image formats and uses
-            image validation in its processing paths. These precautions reduce some
+            The application limits image sizes and formats and validates private-upload
+            images before inference. Private uploads use short-lived, restricted upload
+            tokens and single-use inference authorizations. Storage credentials are kept
+            server-side; HTTPS is used for production transfers. These precautions reduce some
             risks but cannot guarantee absolute security. Transmission security,
             infrastructure access controls, and other hosting protections depend on
             the deployment. No method of transmission or processing is completely secure.

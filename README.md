@@ -220,8 +220,9 @@ Vite proxies API calls to port 8765 and serves the CNN resources from its own pu
 
 The frontend's Vercel project should use Root Directory `frontend/react`,
 Framework Preset **Vite**, Build Command `npm run build`, and Output Directory
-`dist`. Keep existing compatible build settings; no new environment variables
-or dependencies are needed.
+`dist`. Keep existing compatible build settings. Small-image rewrites need no
+new environment variables; private uploads require server-only configuration
+and the Vercel Blob SDK described below.
 
 [`frontend/react/vercel.json`](frontend/react/vercel.json) configures two
 exact-path external rewrites:
@@ -243,11 +244,17 @@ There is no wildcard API rewrite: `/api/predict/mobilenet` and
 their own backend configuration. Local development remains unchanged:
 `vite.config.js` proxies all `/api` requests to `http://127.0.0.1:8765`.
 
-**Production upload limitation:** Although the application still allows
-15 MiB, images exceeding Vercel's **4.5 MB request-body limit** remain
-unsupported in production until the private Vercel Blob upload/retrieval flow
-is completed. Rewrites do not bypass this limit. No image compression or Blob
-uploads are enabled by this configuration.
+**Private uploads:** Files up to 4,000,000 bytes retain the existing raw request
+path. Larger files, up to the original **15 MiB** limit, use direct
+browser-to-private-Blob uploads when configured. Only a single-use receipt
+reaches the backend through the new Node gateway; the image bytes bypass
+Vercel's 4.5 MB function request limit. No compression or model changes are added.
+
+OIDC-backed presigned uploads avoid a static Blob token; private backend reads
+and deletion use runtime OIDC. Keep `PRIVATE_UPLOADS_ENABLED=0` or absent.
+Activation requires shared free Redis state, server-only security settings,
+working daily cleanup and verified deployed backend changes. See [private upload setup, security and retention](docs/PRIVATE_UPLOADS.md).
+Local Vite behavior remains unchanged; no production settings are enabled here.
 
 See [Vercel external rewrites](https://vercel.com/docs/routing/rewrites) and
 [function limits](https://vercel.com/docs/functions/limitations).
