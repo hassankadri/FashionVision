@@ -34,3 +34,10 @@ Thumbs.db
 # Large CLIP model (download separately)
 /models/clip-vit-base-patch32/model_quantized.onnx
 /models/clip-vit-base-patch32/model_quantized.onnx.part
+
+# Generated runtime files for the separate MobileNet Vercel project
+/deploy/mobilenet/ml/
+/deploy/mobilenet/fashion_rgb_data/
+/deploy/mobilenet/models/
+/deploy/mobilenet/NOTICE.md
+/deploy/mobilenet/.vercel/
